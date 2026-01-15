@@ -2,13 +2,13 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Batalha das Bolas</title>
+<title>Batalha Pixel das Bolas</title>
 <style>
 html,body{
   margin:0;
   padding:0;
   overflow:hidden;
-  background:#0d0d0d;
+  background:#0b0b0b;
 }
 canvas{display:block}
 </style>
@@ -31,7 +31,9 @@ addEventListener("resize", resize);
 // ===== CONFIG =====
 const RAIO = 16;
 const VELOCIDADE = 3;
+const VELOCIDADE_FLECHA = 6;
 
+// ===== CORES =====
 const CORES = [
   {nome:"Amarelo", cor:"#FFD700"},
   {nome:"Vermelho", cor:"#FF3B3B"},
@@ -47,7 +49,6 @@ let coresEscolhidas = [];
 let bolaA, bolaB;
 let itens = [];
 let flechas = [];
-let confetes = [];
 
 let framesRoleta = 120;
 let esperaResultado = 300;
@@ -63,13 +64,11 @@ function criarRoleta(x,y){
 }
 
 function desenharRoleta(r){
-  const raio=120;
+  const raio=110;
   const fatia=(Math.PI*2)/CORES.length;
-
   ctx.save();
   ctx.translate(r.x,r.y);
   ctx.rotate(r.angulo);
-
   for(let i=0;i<CORES.length;i++){
     ctx.beginPath();
     ctx.moveTo(0,0);
@@ -78,13 +77,6 @@ function desenharRoleta(r){
     ctx.fill();
   }
   ctx.restore();
-
-  ctx.fillStyle="#fff";
-  ctx.beginPath();
-  ctx.moveTo(r.x,r.y-raio-20);
-  ctx.lineTo(r.x-14,r.y-raio);
-  ctx.lineTo(r.x+14,r.y-raio);
-  ctx.fill();
 }
 
 function corDaRoleta(r){
@@ -94,45 +86,55 @@ function corDaRoleta(r){
   return CORES[Math.floor(ang/fatia)];
 }
 
-// ===== SPRITES =====
-function spriteEspada(x,y){
+// ===== PIXEL ART =====
+function pixel(x,y,cor){
+  ctx.fillStyle=cor;
+  ctx.fillRect(x,y,3,3);
+}
+
+function spriteEspadaPixel(x,y,rot){
   ctx.save();
   ctx.translate(x,y);
-  ctx.fillStyle="#ccc";
-  ctx.fillRect(-2,-14,4,20);
-  ctx.fillStyle="#444";
-  ctx.fillRect(-4,6,8,4);
+  ctx.rotate(rot);
+  pixel(-3,-15,"#ddd");
+  pixel(-3,-12,"#ddd");
+  pixel(-3,-9,"#ddd");
+  pixel(-3,-6,"#ddd");
+  pixel(-6,-3,"#555");
+  pixel(-3,-3,"#555");
+  pixel(0,-3,"#555");
   ctx.restore();
 }
 
-function spriteArco(x,y){
+function spriteArcoPixel(x,y){
   ctx.save();
   ctx.translate(x,y);
-  ctx.strokeStyle="#8B5A2B";
-  ctx.lineWidth=4;
-  ctx.beginPath();
-  ctx.arc(0,0,10,-Math.PI/2,Math.PI/2);
-  ctx.stroke();
+  pixel(-6,-6,"#8b5a2b");
+  pixel(-6,-3,"#8b5a2b");
+  pixel(-6,0,"#8b5a2b");
+  pixel(-3,-9,"#8b5a2b");
+  pixel(0,-12,"#8b5a2b");
+  pixel(3,-9,"#8b5a2b");
   ctx.strokeStyle="#eee";
-  ctx.lineWidth=1;
   ctx.beginPath();
-  ctx.moveTo(0,-10);
-  ctx.lineTo(0,10);
+  ctx.moveTo(0,-12);
+  ctx.lineTo(0,6);
   ctx.stroke();
   ctx.restore();
 }
 
-function spriteFlecha(x,y,dir){
+function spriteFlechaPixel(x,y,ang){
   ctx.save();
   ctx.translate(x,y);
-  ctx.rotate(dir>0?0:Math.PI);
-  ctx.fillStyle="#ddd";
-  ctx.fillRect(-6,-1,10,2);
-  ctx.beginPath();
-  ctx.moveTo(4,-3);
-  ctx.lineTo(8,0);
-  ctx.lineTo(4,3);
-  ctx.fill();
+  ctx.rotate(ang);
+  pixel(-6,-1,"#ccc");
+  pixel(-3,-1,"#ccc");
+  pixel(0,-1,"#ccc");
+  pixel(3,-1,"#ccc");
+  pixel(6,-1,"#ccc");
+  pixel(6,-4,"#ccc");
+  pixel(9,-1,"#ccc");
+  pixel(6,2,"#ccc");
   ctx.restore();
 }
 
@@ -144,6 +146,7 @@ function criarBola(x,cor){
     cor,
     vida:3,
     espada:false,
+    espadaAng:0,
     flechas:0
   };
 }
@@ -169,6 +172,7 @@ function iniciarBatalha(){
 function loop(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
+  // ROLETAS
   if(estado==="roleta"){
     if(roletas.length===0){
       roletas=[
@@ -203,6 +207,7 @@ function loop(){
     }
   }
 
+  // BATALHA
   if(estado==="batalha"){
     if(Math.random()<0.01 && itens.length<2)
       itens.push(criarItem());
@@ -218,15 +223,42 @@ function loop(){
     if(teclas["ArrowLeft"]) bolaB.x-=VELOCIDADE;
     if(teclas["ArrowRight"]) bolaB.x+=VELOCIDADE;
 
+    // DISPARO DIRECIONAL
     if(teclas["q"] && bolaA.flechas>0){
-      flechas.push({x:bolaA.x,y:bolaA.y,dx:6,alvo:bolaB});
-      bolaA.flechas--; teclas["q"]=false;
-    }
-    if(teclas["Shift"] && bolaB.flechas>0){
-      flechas.push({x:bolaB.x,y:bolaB.y,dx:-6,alvo:bolaA});
-      bolaB.flechas--; teclas["Shift"]=false;
+      let dx = bolaB.x - bolaA.x;
+      let dy = bolaB.y - bolaA.y;
+      let d = Math.hypot(dx,dy);
+      dx/=d; dy/=d;
+      flechas.push({
+        x:bolaA.x,
+        y:bolaA.y,
+        dx:dx*VELOCIDADE_FLECHA,
+        dy:dy*VELOCIDADE_FLECHA,
+        ang:Math.atan2(dy,dx),
+        alvo:bolaB
+      });
+      bolaA.flechas--;
+      teclas["q"]=false;
     }
 
+    if(teclas["Shift"] && bolaB.flechas>0){
+      let dx = bolaA.x - bolaB.x;
+      let dy = bolaA.y - bolaB.y;
+      let d = Math.hypot(dx,dy);
+      dx/=d; dy/=d;
+      flechas.push({
+        x:bolaB.x,
+        y:bolaB.y,
+        dx:dx*VELOCIDADE_FLECHA,
+        dy:dy*VELOCIDADE_FLECHA,
+        ang:Math.atan2(dy,dx),
+        alvo:bolaA
+      });
+      bolaB.flechas--;
+      teclas["Shift"]=false;
+    }
+
+    // BOLAS + ESPADA GIRANDO
     [bolaA,bolaB].forEach(b=>{
       b.x=Math.max(RAIO,Math.min(canvas.width-RAIO,b.x));
       b.y=Math.max(RAIO,Math.min(canvas.height-RAIO,b.y));
@@ -234,12 +266,21 @@ function loop(){
       ctx.arc(b.x,b.y,RAIO,0,Math.PI*2);
       ctx.fillStyle=b.cor;
       ctx.fill();
+
+      if(b.espada){
+        b.espadaAng+=0.25;
+        spriteEspadaPixel(
+          b.x + Math.cos(b.espadaAng)*22,
+          b.y + Math.sin(b.espadaAng)*22,
+          b.espadaAng
+        );
+      }
     });
 
     // ITENS
     itens.forEach((it,i)=>{
-      if(it.tipo==="espada") spriteEspada(it.x,it.y);
-      if(it.tipo==="arco") spriteArco(it.x,it.y);
+      if(it.tipo==="espada") spriteEspadaPixel(it.x,it.y,0);
+      if(it.tipo==="arco") spriteArcoPixel(it.x,it.y);
 
       [bolaA,bolaB].forEach(b=>{
         if(Math.hypot(b.x-it.x,b.y-it.y)<RAIO+10){
@@ -253,19 +294,22 @@ function loop(){
     // FLECHAS
     flechas.forEach((f,i)=>{
       f.x+=f.dx;
-      spriteFlecha(f.x,f.y,f.dx);
-      if(Math.abs(f.x-f.alvo.x)<RAIO){
+      f.y+=f.dy;
+      spriteFlechaPixel(f.x,f.y,f.ang);
+
+      if(Math.hypot(f.x-f.alvo.x,f.y-f.alvo.y)<RAIO){
         f.alvo.vida--;
         flechas.splice(i,1);
       }
     });
 
-    // ESPADA
+    // DANO ESPADA
     if(Math.hypot(bolaA.x-bolaB.x,bolaA.y-bolaB.y)<RAIO*2){
       if(bolaA.espada){ bolaB.vida--; bolaA.espada=false; }
       if(bolaB.espada){ bolaA.vida--; bolaB.espada=false; }
     }
 
+    // HUD
     ctx.fillStyle="#fff";
     ctx.font="26px Arial";
     ctx.fillText("❤️".repeat(bolaA.vida),20,40);
@@ -283,3 +327,4 @@ loop();
 </script>
 </body>
 </html>
+
