@@ -45,7 +45,7 @@ let estado = "roleta";
 let tempo = 0;
 
 let roletas = [];
-let resultado = [];
+let coresEscolhidas = [];
 
 let pegadora, fugitiva;
 let confetes = [];
@@ -72,19 +72,14 @@ function desenharRoleta(r){
 
   for(let i=0;i<CORES.length;i++){
     const grad = ctx.createRadialGradient(0,0,20,0,0,raio);
-    grad.addColorStop(0,"#ffffff");
-    grad.addColorStop(0.3,CORES[i].cor);
+    grad.addColorStop(0,"#fff");
+    grad.addColorStop(0.4,CORES[i].cor);
     grad.addColorStop(1,"#000");
 
     ctx.beginPath();
     ctx.moveTo(0,0);
     ctx.fillStyle = grad;
-    ctx.arc(
-      0,0,
-      raio,
-      i*fatia,
-      (i+1)*fatia
-    );
+    ctx.arc(0,0,raio,i*fatia,(i+1)*fatia);
     ctx.fill();
 
     ctx.lineWidth = 2;
@@ -93,27 +88,14 @@ function desenharRoleta(r){
   }
 
   // centro
-  const hub = ctx.createRadialGradient(0,0,0,0,0,25);
-  hub.addColorStop(0,"#fff");
-  hub.addColorStop(1,"#999");
-
   ctx.beginPath();
-  ctx.fillStyle = hub;
+  ctx.fillStyle="#ddd";
   ctx.arc(0,0,22,0,Math.PI*2);
   ctx.fill();
 
   ctx.restore();
 
-  // sombra
-  ctx.beginPath();
-  ctx.arc(r.x,r.y,raio,0,Math.PI*2);
-  ctx.shadowColor="rgba(0,0,0,0.4)";
-  ctx.shadowBlur=20;
-  ctx.strokeStyle="transparent";
-  ctx.stroke();
-  ctx.shadowBlur=0;
-
-  // seta
+  // seta fixa
   ctx.fillStyle="#fff";
   ctx.beginPath();
   ctx.moveTo(r.x,r.y-raio-28);
@@ -123,13 +105,13 @@ function desenharRoleta(r){
   ctx.fill();
 }
 
-function sortearCores(){
-  let i = Math.floor(Math.random()*CORES.length);
-  let j;
-  do{
-    j = Math.floor(Math.random()*CORES.length);
-  }while(j===i);
-  return [CORES[i], CORES[j]];
+// calcula a cor apontada pela seta
+function corDaRoleta(r){
+  const fatia = (Math.PI*2)/CORES.length;
+  let ang = (-r.angulo - Math.PI/2) % (Math.PI*2);
+  if(ang < 0) ang += Math.PI*2;
+  const index = Math.floor(ang / fatia);
+  return CORES[index];
 }
 
 // ================= JOGO =================
@@ -143,14 +125,14 @@ function criarBola(cor){
 }
 
 function iniciarJogo(){
-  pegadora = criarBola(resultado[0].cor);
-  fugitiva = criarBola(resultado[1].cor);
+  pegadora = criarBola(coresEscolhidas[0].cor);
+  fugitiva = criarBola(coresEscolhidas[1].cor);
   tempo = TEMPO_MAX;
   estado = "jogo";
 }
 
 function criarConfetes(cor){
-  for(let i=0;i<150;i++){
+  for(let i=0;i<160;i++){
     confetes.push({
       x:canvas.width/2,
       y:canvas.height/2,
@@ -173,9 +155,9 @@ function loop(){
         criarRoleta(canvas.width*0.35,canvas.height/2),
         criarRoleta(canvas.width*0.65,canvas.height/2)
       ];
-      resultado = sortearCores();
       framesRoleta = 120;
       esperaResultado = 0;
+      coresEscolhidas = [];
     }
 
     roletas.forEach(r=>{
@@ -190,9 +172,20 @@ function loop(){
       framesRoleta--;
       if(framesRoleta === 0){
         roletas.forEach(r=>r.vel=0);
-        esperaResultado = 300;
+
+        let c1 = corDaRoleta(roletas[0]);
+        let c2 = corDaRoleta(roletas[1]);
+
+        if(c1.nome === c2.nome){
+          roletas[1].angulo += Math.PI/CORES.length;
+          c2 = corDaRoleta(roletas[1]);
+        }
+
+        coresEscolhidas = [c1,c2];
+        esperaResultado = 300; // 5s
       }
-    } else if(esperaResultado > 0){
+    }
+    else if(esperaResultado > 0){
       esperaResultado--;
       if(esperaResultado === 0){
         roletas = [];
