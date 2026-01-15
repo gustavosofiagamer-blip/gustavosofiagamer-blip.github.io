@@ -56,11 +56,6 @@ function criarBola(cor) {
   };
 }
 
-function manterNaTela(b) {
-  b.x = Math.max(RAIO, Math.min(canvas.width - RAIO, b.x)));
-  b.y = Math.max(RAIO, Math.min(canvas.height - RAIO, b.y)));
-}
-
 function criarConfetes(cor) {
   for (let i = 0; i < 120; i++) {
     confetes.push({
@@ -80,7 +75,7 @@ iniciarJogo();
 function loop() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // TIMER GIGANTE ABSURDO (FUNDO)
+  // TIMER GIGANTE ABSURDO
   const tamanhoTimer = Math.min(canvas.width, canvas.height) * 0.6;
   ctx.fillStyle = "#444";
   ctx.font = `900 ${tamanhoTimer}px Arial`;
@@ -104,6 +99,8 @@ function loop() {
     [pegadora, fugitiva].forEach(b => {
       b.x += b.vx;
       b.y += b.vy;
+
+      // manter na tela (CORRIGIDO)
       b.x = Math.max(RAIO, Math.min(canvas.width - RAIO, b.x));
       b.y = Math.max(RAIO, Math.min(canvas.height - RAIO, b.y));
     });
