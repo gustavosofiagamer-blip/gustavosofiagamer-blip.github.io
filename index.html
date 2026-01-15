@@ -8,7 +8,7 @@ html,body{
   margin:0;
   padding:0;
   overflow:hidden;
-  background:#111;
+  background:#0e0e0e;
 }
 canvas{display:block}
 </style>
@@ -34,10 +34,10 @@ const FPS = 60;
 const TEMPO_MAX = 10 * FPS;
 
 const CORES = [
-  {nome:"Amarelo", cor:"yellow"},
-  {nome:"Vermelho", cor:"red"},
-  {nome:"Azul", cor:"dodgerblue"},
-  {nome:"Verde", cor:"lime"}
+  {nome:"Amarelo", cor:"#FFD700"},
+  {nome:"Vermelho", cor:"#FF3B3B"},
+  {nome:"Azul", cor:"#2EA0FF"},
+  {nome:"Verde", cor:"#2EFF6A"}
 ];
 
 // ================= ESTADO =================
@@ -50,8 +50,8 @@ let resultado = [];
 let pegadora, fugitiva;
 let confetes = [];
 
-let framesRoleta = 120;        // tempo girando
-let esperaResultado = 0;       // tempo parado mostrando resultado
+let framesRoleta = 120;
+let esperaResultado = 0;
 
 // ================= ROLETAS =================
 function criarRoleta(x,y){
@@ -63,28 +63,63 @@ function criarRoleta(x,y){
 }
 
 function desenharRoleta(r){
-  const raio=120;
-  const fatia=(Math.PI*2)/CORES.length;
+  const raio = 130;
+  const fatia = (Math.PI*2)/CORES.length;
+
+  ctx.save();
+  ctx.translate(r.x,r.y);
+  ctx.rotate(r.angulo);
 
   for(let i=0;i<CORES.length;i++){
+    const grad = ctx.createRadialGradient(0,0,20,0,0,raio);
+    grad.addColorStop(0,"#ffffff");
+    grad.addColorStop(0.3,CORES[i].cor);
+    grad.addColorStop(1,"#000");
+
     ctx.beginPath();
-    ctx.moveTo(r.x,r.y);
-    ctx.fillStyle=CORES[i].cor;
+    ctx.moveTo(0,0);
+    ctx.fillStyle = grad;
     ctx.arc(
-      r.x,r.y,
+      0,0,
       raio,
-      r.angulo+i*fatia,
-      r.angulo+(i+1)*fatia
+      i*fatia,
+      (i+1)*fatia
     );
     ctx.fill();
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(255,255,255,0.7)";
+    ctx.stroke();
   }
+
+  // centro
+  const hub = ctx.createRadialGradient(0,0,0,0,0,25);
+  hub.addColorStop(0,"#fff");
+  hub.addColorStop(1,"#999");
+
+  ctx.beginPath();
+  ctx.fillStyle = hub;
+  ctx.arc(0,0,22,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.restore();
+
+  // sombra
+  ctx.beginPath();
+  ctx.arc(r.x,r.y,raio,0,Math.PI*2);
+  ctx.shadowColor="rgba(0,0,0,0.4)";
+  ctx.shadowBlur=20;
+  ctx.strokeStyle="transparent";
+  ctx.stroke();
+  ctx.shadowBlur=0;
 
   // seta
   ctx.fillStyle="#fff";
   ctx.beginPath();
-  ctx.moveTo(r.x,r.y-raio-18);
-  ctx.lineTo(r.x-12,r.y-raio);
-  ctx.lineTo(r.x+12,r.y-raio);
+  ctx.moveTo(r.x,r.y-raio-28);
+  ctx.lineTo(r.x-16,r.y-raio-4);
+  ctx.lineTo(r.x+16,r.y-raio-4);
+  ctx.closePath();
   ctx.fill();
 }
 
@@ -139,7 +174,7 @@ function loop(){
         criarRoleta(canvas.width*0.65,canvas.height/2)
       ];
       resultado = sortearCores();
-      framesRoleta = 120;             // gira 2s
+      framesRoleta = 120;
       esperaResultado = 0;
     }
 
@@ -155,10 +190,9 @@ function loop(){
       framesRoleta--;
       if(framesRoleta === 0){
         roletas.forEach(r=>r.vel=0);
-        esperaResultado = 300;        // ⭐ 5 segundos (60fps)
+        esperaResultado = 300;
       }
-    } 
-    else if(esperaResultado > 0){
+    } else if(esperaResultado > 0){
       esperaResultado--;
       if(esperaResultado === 0){
         roletas = [];
@@ -171,21 +205,13 @@ function loop(){
   if(estado==="jogo"){
     tempo--;
 
-    // TIMER GIGANTE
-    ctx.fillStyle="#444";
+    ctx.fillStyle="#333";
     ctx.font=`900 ${Math.min(canvas.width,canvas.height)*0.65}px Arial`;
     ctx.textAlign="center";
     ctx.textBaseline="middle";
-    ctx.fillText(
-      Math.ceil(tempo/FPS),
-      canvas.width/2,
-      canvas.height/2
-    );
+    ctx.fillText(Math.ceil(tempo/FPS),canvas.width/2,canvas.height/2);
 
-    let ang = Math.atan2(
-      fugitiva.y-pegadora.y,
-      fugitiva.x-pegadora.x
-    );
+    let ang = Math.atan2(fugitiva.y-pegadora.y,fugitiva.x-pegadora.x);
 
     pegadora.vx = Math.cos(ang)*3;
     pegadora.vy = Math.sin(ang)*3;
@@ -194,11 +220,11 @@ function loop(){
     fugitiva.vy = -Math.sin(ang)*2.2;
 
     [pegadora,fugitiva].forEach(b=>{
-      b.x += b.vx;
-      b.y += b.vy;
+      b.x+=b.vx;
+      b.y+=b.vy;
 
-      b.x = Math.max(RAIO,Math.min(canvas.width-RAIO,b.x));
-      b.y = Math.max(RAIO,Math.min(canvas.height-RAIO,b.y));
+      b.x=Math.max(RAIO,Math.min(canvas.width-RAIO,b.x));
+      b.y=Math.max(RAIO,Math.min(canvas.height-RAIO,b.y));
 
       ctx.beginPath();
       ctx.arc(b.x,b.y,RAIO,0,Math.PI*2);
@@ -206,10 +232,7 @@ function loop(){
       ctx.fill();
     });
 
-    if(Math.hypot(
-      pegadora.x-fugitiva.x,
-      pegadora.y-fugitiva.y
-    ) < RAIO*2){
+    if(Math.hypot(pegadora.x-fugitiva.x,pegadora.y-fugitiva.y)<RAIO*2){
       criarConfetes(pegadora.cor);
       estado="fim";
     }
