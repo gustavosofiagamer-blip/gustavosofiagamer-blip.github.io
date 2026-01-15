@@ -29,12 +29,10 @@ addEventListener("resize", resize);
 
 const RAIO = 14;
 const TEMPO_FUGA = 10 * 60; // 10 segundos
-const RESTART_DELAY = 5 * 60;
-
 const cores = ["yellow", "red", "dodgerblue", "lime"];
 
 let pegadora, fugitiva;
-let tempo, estado, confetes, delay;
+let tempo, estado, confetes;
 
 // ===== INICIAR =====
 function iniciarJogo() {
@@ -46,7 +44,6 @@ function iniciarJogo() {
   tempo = TEMPO_FUGA;
   estado = "jogando";
   confetes = [];
-  delay = 0;
 }
 
 function criarBola(cor) {
@@ -65,12 +62,12 @@ function manterNaTela(b) {
 }
 
 function criarConfetes(cor) {
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 120; i++) {
     confetes.push({
       x: canvas.width / 2,
       y: canvas.height / 2,
-      dx: (Math.random() - 0.5) * 9,
-      dy: (Math.random() - 0.5) * 9,
+      dx: (Math.random() - 0.5) * 10,
+      dy: (Math.random() - 0.5) * 10,
       vida: 90,
       cor
     });
@@ -83,9 +80,9 @@ iniciarJogo();
 function loop() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // ===== TIMER (FUNDO) =====
+  // TIMER GIGANTE (FUNDO)
   ctx.fillStyle = "#555";
-  ctx.font = "bold 160px Arial";
+  ctx.font = "bold 240px Arial";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(Math.ceil(tempo / 60), canvas.width / 2, canvas.height / 2);
@@ -121,12 +118,13 @@ function loop() {
       criarConfetes(fugitiva.cor);
       estado = "fim";
     }
-  } else {
-    delay++;
-    if (delay >= RESTART_DELAY) iniciarJogo();
+  } 
+  else {
+    // reinício automático imediato
+    if (confetes.length === 0) iniciarJogo();
   }
 
-  // ===== BOLAS (POR CIMA DO TIMER) =====
+  // bolas por cima do timer
   [pegadora, fugitiva].forEach(b => {
     ctx.beginPath();
     ctx.arc(b.x, b.y, RAIO, 0, Math.PI * 2);
@@ -134,7 +132,7 @@ function loop() {
     ctx.fill();
   });
 
-  // ===== CONFETES =====
+  // confetes
   confetes.forEach((c,i) => {
     c.x += c.dx;
     c.y += c.dy;
