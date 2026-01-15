@@ -28,51 +28,40 @@ resize();
 addEventListener("resize", resize);
 
 const RAIO = 14;
-const TEMPO_FUGA = 20 * 60; // 20 segundos (60fps)
+const TEMPO_FUGA = 20 * 60; // 20s
 const RESTART_DELAY = 5 * 60;
 
-const cores = [
-  { nome: "amarelo", cor: "yellow" },
-  { nome: "vermelho", cor: "red" },
-  { nome: "azul", cor: "dodgerblue" },
-  { nome: "verde", cor: "lime" }
-];
+const cores = ["yellow", "red", "dodgerblue", "lime"];
 
-let bolas = [];
-let pegadora = null;
-let fugitiva = null;
-let tempo = 0;
-let estado = "jogando";
-let vencedor = null;
-let confetes = [];
-let delay = 0;
+let pegadora, fugitiva;
+let tempo, estado, confetes, delay;
 
+// ===== INICIAR JOGO =====
 function iniciarJogo() {
-  bolas = cores.map(c => ({
-    cor: c.cor,
+  let escolhidas = cores.sort(() => Math.random() - 0.5).slice(0, 2);
+
+  pegadora = criarBola(escolhidas[0]);
+  fugitiva = criarBola(escolhidas[1]);
+
+  tempo = TEMPO_FUGA;
+  estado = "jogando";
+  confetes = [];
+  delay = 0;
+}
+
+function criarBola(cor) {
+  return {
+    cor,
     x: Math.random() * (canvas.width - RAIO * 2) + RAIO,
     y: Math.random() * (canvas.height - RAIO * 2) + RAIO,
     vx: 0,
     vy: 0
-  }));
-
-  let indices = [0,1,2,3].sort(() => Math.random() - 0.5);
-  pegadora = bolas[indices[0]];
-  fugitiva = bolas[indices[1]];
-
-  tempo = TEMPO_FUGA;
-  estado = "jogando";
-  vencedor = null;
-  confetes = [];
-  delay = 0;
+  };
 }
-iniciarJogo();
 
 function manterNaTela(b) {
-  if (b.x < RAIO) b.x = RAIO;
-  if (b.x > canvas.width - RAIO) b.x = canvas.width - RAIO;
-  if (b.y < RAIO) b.y = RAIO;
-  if (b.y > canvas.height - RAIO) b.y = canvas.height - RAIO;
+  b.x = Math.max(RAIO, Math.min(canvas.width - RAIO, b.x));
+  b.y = Math.max(RAIO, Math.min(canvas.height - RAIO, b.y));
 }
 
 function criarConfetes(cor) {
@@ -88,23 +77,26 @@ function criarConfetes(cor) {
   }
 }
 
+iniciarJogo();
+
+// ===== LOOP =====
 function loop() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   if (estado === "jogando") {
     tempo--;
 
-    // movimento pegadora
+    // pegadora persegue
     let angP = Math.atan2(fugitiva.y - pegadora.y, fugitiva.x - pegadora.x);
     pegadora.vx = Math.cos(angP) * 3;
     pegadora.vy = Math.sin(angP) * 3;
 
-    // movimento fugitiva
+    // fugitiva foge
     let angF = Math.atan2(fugitiva.y - pegadora.y, fugitiva.x - pegadora.x);
     fugitiva.vx = Math.cos(angF) * 2.2;
     fugitiva.vy = Math.sin(angF) * 2.2;
 
-    bolas.forEach(b => {
+    [pegadora, fugitiva].forEach(b => {
       b.x += b.vx;
       b.y += b.vy;
       manterNaTela(b);
@@ -113,14 +105,12 @@ function loop() {
     // colisão
     let d = Math.hypot(pegadora.x - fugitiva.x, pegadora.y - fugitiva.y);
     if (d < RAIO * 2) {
-      vencedor = pegadora;
       criarConfetes(pegadora.cor);
       estado = "fim";
     }
 
     // tempo acabou
     if (tempo <= 0) {
-      vencedor = fugitiva;
       criarConfetes(fugitiva.cor);
       estado = "fim";
     }
@@ -130,8 +120,8 @@ function loop() {
     if (delay >= RESTART_DELAY) iniciarJogo();
   }
 
-  // desenhar bolas
-  bolas.forEach(b => {
+  // desenhar bolas ativas
+  [pegadora, fugitiva].forEach(b => {
     ctx.beginPath();
     ctx.arc(b.x, b.y, RAIO, 0, Math.PI * 2);
     ctx.fillStyle = b.cor;
