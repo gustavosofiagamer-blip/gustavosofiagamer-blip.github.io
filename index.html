@@ -57,8 +57,8 @@ function criarBola(cor) {
 }
 
 function manterNaTela(b) {
-  b.x = Math.max(RAIO, Math.min(canvas.width - RAIO, b.x));
-  b.y = Math.max(RAIO, Math.min(canvas.height - RAIO, b.y));
+  b.x = Math.max(RAIO, Math.min(canvas.width - RAIO, b.x)));
+  b.y = Math.max(RAIO, Math.min(canvas.height - RAIO, b.y)));
 }
 
 function criarConfetes(cor) {
@@ -80,9 +80,10 @@ iniciarJogo();
 function loop() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // TIMER GIGANTE (FUNDO)
-  ctx.fillStyle = "#555";
-  ctx.font = "bold 240px Arial";
+  // TIMER GIGANTE ABSURDO (FUNDO)
+  const tamanhoTimer = Math.min(canvas.width, canvas.height) * 0.6;
+  ctx.fillStyle = "#444";
+  ctx.font = `900 ${tamanhoTimer}px Arial`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(Math.ceil(tempo / 60), canvas.width / 2, canvas.height / 2);
@@ -103,7 +104,8 @@ function loop() {
     [pegadora, fugitiva].forEach(b => {
       b.x += b.vx;
       b.y += b.vy;
-      manterNaTela(b);
+      b.x = Math.max(RAIO, Math.min(canvas.width - RAIO, b.x));
+      b.y = Math.max(RAIO, Math.min(canvas.height - RAIO, b.y));
     });
 
     // colisão
@@ -118,9 +120,8 @@ function loop() {
       criarConfetes(fugitiva.cor);
       estado = "fim";
     }
-  } 
-  else {
-    // reinício automático imediato
+  } else {
+    // reinício automático
     if (confetes.length === 0) iniciarJogo();
   }
 
