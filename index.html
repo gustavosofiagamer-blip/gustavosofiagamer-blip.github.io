@@ -10,9 +10,7 @@
     overflow: hidden;
     background: #111;
   }
-  canvas {
-    display: block;
-  }
+  canvas { display: block; }
 </style>
 </head>
 <body>
@@ -29,28 +27,44 @@ function resize() {
 resize();
 addEventListener("resize", resize);
 
-// ===== CONFIG =====
 const TOTAL = 5;
 const RAIO = 12;
 
-// ===== BOLINHAS =====
 let bolinhas = [];
 
-// cria bolinhas
+// criar bolinhas
 for (let i = 0; i < TOTAL; i++) {
   bolinhas.push({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    vx: (Math.random() - 0.5) * 4,
-    vy: (Math.random() - 0.5) * 4,
+    x: Math.random() * (canvas.width - RAIO * 2) + RAIO,
+    y: Math.random() * (canvas.height - RAIO * 2) + RAIO,
+    vx: 0,
+    vy: 0,
     pegadora: false
   });
 }
 
-// escolhe a pegadora
+// escolher pegadora
 bolinhas[Math.floor(Math.random() * bolinhas.length)].pegadora = true;
 
-// ===== LOOP =====
+function manterNaTela(b) {
+  if (b.x < RAIO) {
+    b.x = RAIO;
+    b.vx *= -1;
+  }
+  if (b.x > canvas.width - RAIO) {
+    b.x = canvas.width - RAIO;
+    b.vx *= -1;
+  }
+  if (b.y < RAIO) {
+    b.y = RAIO;
+    b.vy *= -1;
+  }
+  if (b.y > canvas.height - RAIO) {
+    b.y = canvas.height - RAIO;
+    b.vy *= -1;
+  }
+}
+
 function loop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -62,33 +76,24 @@ function loop() {
     return;
   }
 
-  bolinhas.forEach((b, i) => {
-    // movimento
-    b.x += b.vx;
-    b.y += b.vy;
-
-    // quicar na parede
-    if (b.x < RAIO || b.x > canvas.width - RAIO) b.vx *= -1;
-    if (b.y < RAIO || b.y > canvas.height - RAIO) b.vy *= -1;
-
-    // se for pegadora, persegue
+  bolinhas.forEach(b => {
     if (b.pegadora) {
       let alvo = bolinhas.find(o => !o.pegadora);
-      if (alvo) {
-        let ang = Math.atan2(alvo.y - b.y, alvo.x - b.x);
-        b.vx = Math.cos(ang) * 3;
-        b.vy = Math.sin(ang) * 3;
-      }
-    } 
-    // fugitivas fogem
-    else {
+      let ang = Math.atan2(alvo.y - b.y, alvo.x - b.x);
+      b.vx = Math.cos(ang) * 3;
+      b.vy = Math.sin(ang) * 3;
+    } else {
       let pegadora = bolinhas.find(o => o.pegadora);
       let ang = Math.atan2(b.y - pegadora.y, b.x - pegadora.x);
       b.vx = Math.cos(ang) * 2;
       b.vy = Math.sin(ang) * 2;
     }
 
-    // desenhar
+    b.x += b.vx;
+    b.y += b.vy;
+
+    manterNaTela(b);
+
     ctx.beginPath();
     ctx.arc(b.x, b.y, RAIO, 0, Math.PI * 2);
     ctx.fillStyle = b.pegadora ? "red" : "white";
@@ -102,10 +107,9 @@ function loop() {
         let a = bolinhas[i];
         let b = bolinhas[j];
         let d = Math.hypot(a.x - b.x, a.y - b.y);
-        if (d < RAIO * 2) {
-          if (a.pegadora && !b.pegadora) {
-            bolinhas.splice(j, 1);
-          }
+        if (d < RAIO * 2 && a.pegadora && !b.pegadora) {
+          bolinhas.splice(j, 1);
+          break;
         }
       }
     }
