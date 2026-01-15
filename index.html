@@ -31,6 +31,7 @@ addEventListener("resize", resize);
 // ===== CONFIG =====
 const FPS = 60;
 const RAIO = 16;
+const VELOCIDADE = 3;
 
 const CORES = [
   {nome:"Amarelo", cor:"#FFD700"},
@@ -51,6 +52,11 @@ let confetes = [];
 
 let framesRoleta = 120;
 let esperaResultado = 0;
+
+// ===== INPUT =====
+const teclas = {};
+addEventListener("keydown", e => teclas[e.key] = true);
+addEventListener("keyup", e => teclas[e.key] = false);
 
 // ===== ROLETAS =====
 function criarRoleta(x,y){
@@ -85,15 +91,17 @@ function desenharRoleta(r){
 function corDaRoleta(r){
   const fatia=(Math.PI*2)/CORES.length;
   let ang=(-r.angulo-Math.PI/2)%(Math.PI*2);
-  if(ang<0)ang+=Math.PI*2;
+  if(ang<0) ang+=Math.PI*2;
   return CORES[Math.floor(ang/fatia)];
 }
 
 // ===== BATALHA =====
 function criarBola(x,cor){
   return{
-    x,y:canvas.height/2,
+    x,
+    y:canvas.height/2,
     vx:0,
+    vy:0,
     cor,
     vida:3,
     espada:false,
@@ -118,16 +126,11 @@ function iniciarBatalha(){
   estado="batalha";
 }
 
-// ===== INPUT =====
-const teclas={};
-addEventListener("keydown",e=>teclas[e.key]=true);
-addEventListener("keyup",e=>teclas[e.key]=false);
-
 // ===== LOOP =====
 function loop(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // ROLETAS
+  // --- ROLETAS ---
   if(estado==="roleta"){
     if(roletas.length===0){
       roletas=[
@@ -150,7 +153,8 @@ function loop(){
     if(framesRoleta===0){
       let c1=corDaRoleta(roletas[0]);
       let c2=corDaRoleta(roletas[1]);
-      if(c1.nome===c2.nome)c2=CORES[(CORES.indexOf(c2)+1)%CORES.length];
+      if(c1.nome===c2.nome)
+        c2=CORES[(CORES.indexOf(c2)+1)%CORES.length];
       coresEscolhidas=[c1,c2];
       esperaResultado=300;
     }
@@ -164,42 +168,49 @@ function loop(){
     }
   }
 
-  // BATALHA
+  // --- BATALHA ---
   if(estado==="batalha"){
-    if(Math.random()<0.01 && itens.length<2) itens.push(criarItem());
+    if(Math.random()<0.01 && itens.length<2)
+      itens.push(criarItem());
 
-    // movimento
-    if(teclas["a"]) bolaA.x-=3;
-    if(teclas["d"]) bolaA.x+=3;
-    if(teclas["ArrowLeft"]) bolaB.x-=3;
-    if(teclas["ArrowRight"]) bolaB.x+=3;
+    // MOVIMENTO BOLA A
+    if(teclas["w"]) bolaA.y-=VELOCIDADE;
+    if(teclas["s"]) bolaA.y+=VELOCIDADE;
+    if(teclas["a"]) bolaA.x-=VELOCIDADE;
+    if(teclas["d"]) bolaA.x+=VELOCIDADE;
 
-    // disparo
-    if(teclas["w"] && bolaA.flechas>0){
+    // MOVIMENTO BOLA B
+    if(teclas["ArrowUp"]) bolaB.y-=VELOCIDADE;
+    if(teclas["ArrowDown"]) bolaB.y+=VELOCIDADE;
+    if(teclas["ArrowLeft"]) bolaB.x-=VELOCIDADE;
+    if(teclas["ArrowRight"]) bolaB.x+=VELOCIDADE;
+
+    // DISPAROS
+    if(teclas["q"] && bolaA.flechas>0){
       flechas.push({x:bolaA.x,y:bolaA.y,dx:6,alvo:bolaB});
       bolaA.flechas--;
-      teclas["w"]=false;
+      teclas["q"]=false;
     }
-    if(teclas["ArrowUp"] && bolaB.flechas>0){
+    if(teclas["Shift"] && bolaB.flechas>0){
       flechas.push({x:bolaB.x,y:bolaB.y,dx:-6,alvo:bolaA});
       bolaB.flechas--;
-      teclas["ArrowUp"]=false;
+      teclas["Shift"]=false;
     }
 
-    // bolas
+    // LIMITES + DESENHO
     [bolaA,bolaB].forEach(b=>{
       b.x=Math.max(RAIO,Math.min(canvas.width-RAIO,b.x));
+      b.y=Math.max(RAIO,Math.min(canvas.height-RAIO,b.y));
       ctx.beginPath();
       ctx.arc(b.x,b.y,RAIO,0,Math.PI*2);
       ctx.fillStyle=b.cor;
       ctx.fill();
     });
 
-    // itens
+    // ITENS
     itens.forEach((it,i)=>{
       ctx.fillStyle=it.tipo==="espada"?"#ccc":"#8cf";
       ctx.fillRect(it.x-8,it.y-8,16,16);
-
       [bolaA,bolaB].forEach(b=>{
         if(Math.hypot(b.x-it.x,b.y-it.y)<RAIO+8){
           if(it.tipo==="espada") b.espada=true;
@@ -209,7 +220,7 @@ function loop(){
       });
     });
 
-    // flechas
+    // FLECHAS
     flechas.forEach((f,i)=>{
       f.x+=f.dx;
       ctx.fillStyle="#fff";
@@ -220,8 +231,8 @@ function loop(){
       }
     });
 
-    // dano corpo-a-corpo
-    if(Math.hypot(bolaA.x-bolaB.x,0)<RAIO*2){
+    // DANO CORPO A CORPO
+    if(Math.hypot(bolaA.x-bolaB.x,bolaA.y-bolaB.y)<RAIO*2){
       if(bolaA.espada){ bolaB.vida--; bolaA.espada=false; }
       if(bolaB.espada){ bolaA.vida--; bolaB.espada=false; }
     }
@@ -230,11 +241,11 @@ function loop(){
     ctx.fillStyle="#fff";
     ctx.font="24px Arial";
     ctx.fillText("❤️".repeat(bolaA.vida),20,40);
-    ctx.fillText("❤️".repeat(bolaB.vida),canvas.width-80,40);
+    ctx.fillText("❤️".repeat(bolaB.vida),canvas.width-100,40);
 
     if(bolaA.vida<=0 || bolaB.vida<=0){
       const vencedora = bolaA.vida>0 ? bolaA : bolaB;
-      for(let i=0;i<120;i++){
+      for(let i=0;i<140;i++){
         confetes.push({
           x:canvas.width/2,
           y:canvas.height/2,
@@ -248,7 +259,7 @@ function loop(){
     }
   }
 
-  // CONFETES
+  // --- CONFETES ---
   confetes.forEach((c,i)=>{
     c.x+=c.dx; c.y+=c.dy; c.dy+=0.3; c.vida--;
     ctx.fillStyle=c.cor;
@@ -265,5 +276,6 @@ function loop(){
 
 loop();
 </script>
+
 </body>
 </html>
