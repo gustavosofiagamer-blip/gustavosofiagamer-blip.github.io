@@ -2,21 +2,67 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Meu site</title>
+  <title>Bola quicando</title>
   <style>
-    body {
-      background: #0f0f0f;
-      color: #f2f2f2;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding-top: 80px;
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #111;
     }
-    h1 { font-size: 3em; }
-    p { opacity: 0.8; }
+    canvas {
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <h1>Olá, mundo.</h1>
-  <p>Sim, isso é um site. Eu sobrevivi.</p>
+  <canvas id="tela"></canvas>
+
+  <script>
+    const canvas = document.getElementById("tela");
+    const ctx = canvas.getContext("2d");
+
+    function ajustarTela() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    ajustarTela();
+    window.addEventListener("resize", ajustarTela);
+
+    let bola = {
+      x: 100,
+      y: 100,
+      raio: 15,
+      dx: 4,
+      dy: 4
+    };
+
+    function animar() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // desenha a bola
+      ctx.beginPath();
+      ctx.arc(bola.x, bola.y, bola.raio, 0, Math.PI * 2);
+      ctx.fillStyle = "red";
+      ctx.fill();
+      ctx.closePath();
+
+      // colisão com paredes
+      if (bola.x + bola.raio >= canvas.width || bola.x - bola.raio <= 0) {
+        bola.dx *= -1;
+      }
+      if (bola.y + bola.raio >= canvas.height || bola.y - bola.raio <= 0) {
+        bola.dy *= -1;
+      }
+
+      bola.x += bola.dx;
+      bola.y += bola.dy;
+
+      requestAnimationFrame(animar);
+    }
+
+    animar();
+  </script>
 </body>
 </html>
