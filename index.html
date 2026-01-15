@@ -156,23 +156,22 @@ function loop(){
 
     framesRoleta--;
 
-    if(framesRoleta<=0){
-      roletaA.ativa = false;
-      roletaB.ativa = false;
+if(framesRoleta <= 0){
+  roletaA.ativa = false;
+  roletaB.ativa = false;
 
-      corA = corSelecionada(roletaA);
-      corB = corSelecionada(roletaB);
+  corA = corSelecionada(roletaA);
+  corB = corSelecionada(roletaB);
 
-      // GARANTIA DE CORES DIFERENTES
-      if(corA.cor === corB.cor){
-        roletaB = criarRoleta(canvas.width*0.65, canvas.height/2);
-        framesRoleta = 120;
-      } else {
-        iniciarJogo();
-      }
-    }
+  if(corA.cor === corB.cor){
+    roletaB = criarRoleta(canvas.width*0.65, canvas.height/2);
+    roletaB.vel = 0.35;
+    roletaB.ativa = true;
+    framesRoleta = 90;
+  } else {
+    iniciarJogo();
   }
-
+}
   // ===== JOGO =====
   if(estado==="jogo"){
     tempo--;
